@@ -1,14 +1,33 @@
 import { useEffect, useState } from "react";
 
 const ACCIONES_RAPIDAS = [
-  { label: "Nómina", icon: "💰", tipo: "💰Ingreso" },
-  { label: "Ahorro", icon: "🎯", tipo: "🎯Ahorro" },
-  { label: "Alquiler", icon: "🏠", tipo: "💸Gasto" },
-  { label: "Suministros", icon: "⚡", tipo: "💸Gasto" },
-  { label: "Gasolina", icon: "⛽", tipo: "💸Gasto" },
-  { label: "Alimentación", icon: "🍔", tipo: "💸Gasto" },
-  { label: "Suscripciones", icon: "🔁", tipo: "💸Gasto" },
-  { label: "Otros", icon: "📦", tipo: "💸Gasto" },
+  { label: "Nómina", icon: "💰", tipo: "💰Ingreso", categoriaNombre: "Nómina" },
+  { label: "Ahorro", icon: "🎯", tipo: "🎯Ahorro", categoriaNombre: null },
+  { label: "Alquiler", icon: "🏠", tipo: "💸Gasto", categoriaNombre: "Alquiler" },
+  {
+    label: "Suministros",
+    icon: "⚡",
+    tipo: "💸Gasto",
+    submenu: [
+      { label: "Luz", icon: "💡", categoriaNombre: "Luz" },
+      { label: "Agua", icon: "🚰", categoriaNombre: "Agua" },
+      { label: "Gas", icon: "🔥", categoriaNombre: "Gas" },
+      { label: "Internet", icon: "🌐", categoriaNombre: "Internet" },
+    ],
+  },
+  { label: "Gasolina", icon: "⛽", tipo: "💸Gasto", categoriaNombre: "Gasolina" },
+  { label: "Alimentación", icon: "🍔", tipo: "💸Gasto", categoriaNombre: "Alimentación" },
+  {
+    label: "Suscripciones",
+    icon: "🔁",
+    tipo: "💸Gasto",
+    submenu: [
+      { label: "Netflix", icon: "🎬", categoriaNombre: "Netflix" },
+      { label: "HBO", icon: "📺", categoriaNombre: "HBO" },
+      { label: "Disney", icon: "🏰", categoriaNombre: "Disney" },
+    ],
+  },
+  { label: "Otros", icon: "📦", tipo: "💸Gasto", categoriaNombre: null },
 ];
 
 const TIPOS = ["💰Ingreso", "💸Gasto", "🎯Ahorro", "📈Inversión", "🔁Transferencia"];
@@ -27,7 +46,10 @@ const styles = {
   cuentaNombre: { fontWeight: 600, marginBottom: 4 },
   cuentaLinea: { fontSize: 13, color: "#c7c7c7" },
   botonesGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
-  boton: { background: "#222", border: "1px solid #333", borderRadius: 10, padding: "12px 10px", color: "#f2f2f2", fontSize: 14, display: "flex", alignItems: "center", gap: 8 },
+  boton: { background: "#222", border: "1px solid #333", borderRadius: 10, padding: "12px 10px", color: "#f2f2f2", fontSize: 14, display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left" },
+  botonActivo: { background: "#2c3e5f", border: "1px solid #3b82f6", borderRadius: 10, padding: "12px 10px", color: "#f2f2f2", fontSize: 14, display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left" },
+  submenuBox: { gridColumn: "1 / -1", display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4, marginBottom: 4, paddingLeft: 4 },
+  subChip: { background: "#111", border: "1px solid #333", borderRadius: 20, padding: "8px 14px", color: "#f2f2f2", fontSize: 13, display: "flex", alignItems: "center", gap: 6 },
   overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50 },
   modal: { background: "#181818", width: "100%", maxWidth: 480, borderRadius: "16px 16px 0 0", padding: 20, border: "1px solid #262626", maxHeight: "85vh", overflowY: "auto" },
   input: { width: "100%", padding: 10, borderRadius: 8, border: "1px solid #333", background: "#111", color: "#fff", marginBottom: 12, fontSize: 15 },
@@ -37,9 +59,18 @@ const styles = {
   placeholderBox: { background: "#111", borderRadius: 10, padding: 16, color: "#777", fontSize: 13, textAlign: "center" },
 };
 
+function encontrarCategoriaId(nombre, categorias) {
+  if (!nombre || !categorias) return "";
+  const encontrada = categorias.find(
+    (c) => c.categoria?.trim().toLowerCase() === nombre.trim().toLowerCase()
+  );
+  return encontrada ? encontrada.id : "";
+}
+
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [modalAccion, setModalAccion] = useState(null);
+  const [submenuAbierto, setSubmenuAbierto] = useState(null);
   const [form, setForm] = useState({
     concepto: "",
     importe: "",
@@ -62,18 +93,28 @@ export default function Dashboard() {
     cargarDatos();
   }, []);
 
-  const abrirModal = (accion) => {
-    setModalAccion(accion);
+  const abrirModal = (label, icon, tipo, categoriaNombre) => {
+    const categoriaId = encontrarCategoriaId(categoriaNombre, data.categorias);
+    setModalAccion({ label, icon, tipo });
     setForm({
-      concepto: accion.label,
+      concepto: label,
       importe: "",
       cuentaOrigen: "",
       cuentaDestino: "",
-      categoria: "",
-      tipo: accion.tipo,
+      categoria: categoriaId,
+      tipo,
       fecha: new Date().toISOString().split("T")[0],
     });
     setMensaje("");
+    setSubmenuAbierto(null);
+  };
+
+  const tocarAccion = (accion) => {
+    if (accion.submenu) {
+      setSubmenuAbierto(submenuAbierto === accion.label ? null : accion.label);
+    } else {
+      abrirModal(accion.label, accion.icon, accion.tipo, accion.categoriaNombre);
+    }
   };
 
   const cerrarModal = () => setModalAccion(null);
@@ -137,9 +178,27 @@ export default function Dashboard() {
         <div style={styles.sectionTitle}>⚡ Acciones rápidas</div>
         <div style={styles.botonesGrid}>
           {ACCIONES_RAPIDAS.map((a) => (
-            <button key={a.label} style={styles.boton} onClick={() => abrirModal(a)}>
-              <span>{a.icon}</span> {a.label}
-            </button>
+            <div key={a.label} style={{ display: "contents" }}>
+              <button
+                style={submenuAbierto === a.label ? styles.botonActivo : styles.boton}
+                onClick={() => tocarAccion(a)}
+              >
+                <span>{a.icon}</span> {a.label} {a.submenu ? (submenuAbierto === a.label ? "▲" : "▼") : ""}
+              </button>
+              {a.submenu && submenuAbierto === a.label && (
+                <div style={styles.submenuBox}>
+                  {a.submenu.map((s) => (
+                    <button
+                      key={s.label}
+                      style={styles.subChip}
+                      onClick={() => abrirModal(s.label, s.icon, a.tipo, s.categoriaNombre)}
+                    >
+                      <span>{s.icon}</span> {s.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>
