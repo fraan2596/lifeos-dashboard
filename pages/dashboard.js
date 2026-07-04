@@ -70,5 +70,226 @@ export default function Dashboard() {
       cuentaOrigen: "",
       cuentaDestino: "",
       categoria: "",
-      t
+      tipo: accion.tipo,
+      fecha: new Date().toISOString().split("T")[0],
+    });
+    setMensaje("");
+  };
+
+  const cerrarModal = () => setModalAccion(null);
+
+  const necesitaDestino =
+    form.tipo === "🔁Transferencia" ||
+    form.tipo === "🎯Ahorro" ||
+    form.tipo === "📈Inversión";
+
+  const enviarMovimiento = async () => {
+    if (!form.importe || !form.cuentaOrigen || !form.tipo) {
+      setMensaje("Rellena importe, tipo y cuenta");
+      return;
+    }
+    setEnviando(true);
+    setMensaje("");
+    try {
+      const res = await fetch("/api/add-movimiento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          concepto: form.concepto,
+          importe: form.importe,
+          tipo: form.tipo,
+          fecha: form.fecha,
+          cuentaOrigen: form.cuentaOrigen,
+          cuentaDestino: form.cuentaDestino || null,
+          categoria: form.categoria || null,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setMensaje("✅ Guardado");
+        cargarDatos();
+        setTimeout(cerrarModal, 700);
+      } else {
+        setMensaje("❌ " + json.error);
+      }
+    } catch (e) {
+      setMensaje("❌ Error de red");
+    }
+    setEnviando(false);
+  };
+
+  if (!data) {
+    return (
+      <div style={{ ...styles.page, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        Cargando...
+      </div>
+    );
+  }
+
+  const { cuentas, categorias, kpis } = data;
+
+  return (
+    <div style={styles.page}>
+      <h1 style={styles.h1}>💎 LifeOS Finance</h1>
+      <p style={styles.sub}>Tu centro de control de finanzas personales</p>
+
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>⚡ Acciones rápidas</div>
+        <div style={styles.botonesGrid}>
+          {ACCIONES_RAPIDAS.map((a) => (
+            <button key={a.label} style={styles.boton} onClick={() => abrirModal(a)}>
+              <span>{a.icon}</span> {a.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>💰 Resumen</div>
+        <div style={styles.kpiGrid}>
+          <div style={styles.kpiCard}>
+            <div style={styles.kpiLabel}>Ingresos</div>
+            <div style={styles.kpiValue}>{kpis.ingresos}€</div>
+          </div>
+          <div style={styles.kpiCard}>
+            <div style={styles.kpiLabel}>Gastos</div>
+            <div style={styles.kpiValue}>{kpis.gastos}€</div>
+          </div>
+          <div style={styles.kpiCard}>
+            <div style={styles.kpiLabel}>Ahorro</div>
+            <div style={styles.kpiValue}>{kpis.ahorro}€</div>
+          </div>
+          <div style={styles.kpiCard}>
+            <div style={styles.kpiLabel}>Inversión</div>
+            <div style={styles.kpiValue}>{kpis.inversiones}€</div>
+          </div>
+          <div style={{ ...styles.kpiCard, gridColumn: "1 / -1" }}>
+            <div style={styles.kpiLabel}>Patrimonio total</div>
+            <div style={{ ...styles.kpiValue, fontSize: 22 }}>{kpis.patrimonio.toFixed(2)}€</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>🏦 Mis cuentas</div>
+        {cuentas.map((c) => (
+          <div key={c.id} style={styles.cuenta}>
+            <div style={styles.cuentaNombre}>{c.nombre}</div>
+            <div style={styles.cuentaLinea}>Cash: {c.cash}€ · Patrimonio: {c.patrimonio}€</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>🎯 Objetivos</div>
+        <div style={styles.placeholderBox}>Aún no conectado — pásame el ID de esta base de datos de Notion</div>
+      </div>
+
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>📈 Inversiones y activos</div>
+        <div style={styles.placeholderBox}>Aún no conectado — pásame el ID de esta base de datos de Notion</div>
+      </div>
+
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>💳 Préstamos</div>
+        <div style={styles.placeholderBox}>Aún no conectado — pásame el ID de esta base de datos de Notion</div>
+      </div>
+
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>🔁 Suscripciones</div>
+        <div style={styles.placeholderBox}>Aún no conectado — pásame el ID de esta base de datos de Notion</div>
+      </div>
+
+      {modalAccion && (
+        <div style={styles.overlay} onClick={cerrarModal}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0 }}>
+              {modalAccion.icon} {modalAccion.label}
+            </h3>
+
+            <label style={styles.label}>Concepto</label>
+            <input
+              style={styles.input}
+              value={form.concepto}
+              onChange={(e) => setForm({ ...form, concepto: e.target.value })}
+            />
+
+            <label style={styles.label}>Tipo</label>
+            <select
+              style={styles.input}
+              value={form.tipo}
+              onChange={(e) => setForm({ ...form, tipo: e.target.value })}
+            >
+              {TIPOS.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+
+            <label style={styles.label}>Importe (€)</label>
+            <input
+              style={styles.input}
+              type="number"
+              value={form.importe}
+              onChange={(e) => setForm({ ...form, importe: e.target.value })}
+            />
+
+            <label style={styles.label}>Cuenta {necesitaDestino ? "origen" : ""}</label>
+            <select
+              style={styles.input}
+              value={form.cuentaOrigen}
+              onChange={(e) => setForm({ ...form, cuentaOrigen: e.target.value })}
+            >
+              <option value="">Selecciona una cuenta</option>
+              {cuentas.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+
+            {necesitaDestino && (
+              <>
+                <label style={styles.label}>Cuenta destino</label>
+                <select
+                  style={styles.input}
+                  value={form.cuentaDestino}
+                  onChange={(e) => setForm({ ...form, cuentaDestino: e.target.value })}
+                >
+                  <option value="">Selecciona una cuenta</option>
+                  {cuentas.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            <label style={styles.label}>Categoría</label>
+            <select
+              style={styles.input}
+              value={form.categoria}
+              onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+            >
+              <option value="">Selecciona una categoría</option>
+              {categorias.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.categoria || "(sin nombre)"}</option>
+              ))}
+            </select>
+
+            <label style={styles.label}>Fecha</label>
+            <input
+              style={styles.input}
+              type="date"
+              value={form.fecha}
+              onChange={(e) => setForm({ ...form, fecha: e.target.value })}
+            />
+
+            {mensaje && <p style={{ fontSize: 13, marginBottom: 8 }}>{mensaje}</p>}
+
+            <button style={styles.submitBtn} onClick={enviarMovimiento} disabled={enviando}>
+              {enviando ? "Guardando..." : "Guardar movimiento"}
+            </button>
+            <button style={styles.cancelBtn} onClick={cerrarModal}>Cancelar</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
