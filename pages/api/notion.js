@@ -42,6 +42,11 @@ const formulaNumero = (p) => p?.formula?.number ?? 0;
 const seleccion = (p) => p?.select?.name ?? "";
 const fecha = (p) => p?.date?.start ?? null;
 
+const obtenerTitulo = (props) => {
+  const key = Object.keys(props).find((k) => props[k]?.type === "title");
+  return key ? titulo(props[key]) : "";
+};
+
 /* =========================
    CORE
 ========================= */
@@ -76,7 +81,7 @@ async function cargarLifeOS() {
   ========================= */
   const categorias = categoriasRaw.map((cat) => ({
     id: cat.id,
-    categoria: titulo(cat.properties["Categoría"]),
+    categoria: obtenerTitulo(cat.properties),
   }));
 
   /* =========================
