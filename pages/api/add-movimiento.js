@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { concepto, importe, tipo, fecha, cuentaOrigen, cuentaDestino } = req.body;
+    const { concepto, importe, tipo, fecha, cuentaOrigen, cuentaDestino, categoria } = req.body;
 
     if (!concepto || !importe || !tipo || !cuentaOrigen) {
       return res.status(400).json({ ok: false, error: "Faltan campos obligatorios" });
@@ -26,6 +26,10 @@ export default async function handler(req, res) {
 
     if (cuentaDestino) {
       properties["Cuenta destino"] = { relation: [{ id: cuentaDestino }] };
+    }
+
+    if (categoria) {
+      properties["Categoría"] = { relation: [{ id: categoria }] };
     }
 
     const response = await notion.pages.create({
