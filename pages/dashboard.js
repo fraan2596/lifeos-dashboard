@@ -71,3 +71,4 @@ export default function Dashboard() {
       cuentaDestino: "",
       categoria: "",
       t
+}
